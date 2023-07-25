@@ -1,126 +1,70 @@
 require("dotenv").config()
 const User = require("../models/User")
 const Post2 = require("../models/Post2")
-const mongoose = require("mongoose");
 const bcrypt = require("bcrypt")
-const jwt = require("jsonwebtoken")
 const { generateToken } = require("../helpers/generateToken")
 
 
 
 const Register = async (req, res) => {
     try {
-
-        const { email, username, password } = req.body
-
-        if (!(email && username && password)) {
-            return res.status(400).send({ message: "no colocaste los datos de manera correcta o ninguno" })
-
-        }
-
-        const emailExists = await User.findOne({ email });
-
-        if (emailExists) {
-            return res.status(400).json({ message: 'Email already in use' });
-        }
-
-
-
-
-        const salt = bcrypt.genSaltSync(10);
-        const encryptedPassword = await bcrypt.hash(password, salt)
-
-        const NewUser = await User.create({
-            email,
-            username,
-            password: encryptedPassword
-        })
-
-        return res.json({ msg: "usuario creado!!", data: NewUser })
-
+      const { email, username, password } = req.body;
+  
+      if (!(email && username && password)) {
+        return res.status(400).send({ message: "Incomplete data provided" });
+      }
+  
+      const emailExists = await User.findOne({ email });
+  
+      if (emailExists) {
+        return res.status(400).json({ message: "Email already in use" });
+      }
+  
+      const salt = bcrypt.genSaltSync(10);
+      const encryptedPassword = await bcrypt.hash(password, salt);
+  
+      const newUser = await User.create({
+        email,
+        username,
+        password: encryptedPassword,
+      });
+  
+      res.status(201).json({ msg: "User created successfully", data: newUser });
     } catch (error) {
-        console.log(error)
-
+      console.log(error);
+      return res.status(500).json({ error: "Internal server error" });
     }
-}
+  };
 
 
 
-const Login = async (req, res) => {
+  const Login = async (req, res) => {
     try {
-
-        const { email, password } = req.body
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(400).json({
-                error: 'Username or password are incorrect',
-            });
-        }
-
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-
-        if (!isPasswordValid) {
-            return res.status(400).json({
-                error: 'Username or password are incorrect',
-            });
-        }
-
-
-        //generar token 
-        const token = generateToken({
-            id: user._id,
-            email: user.email,
-            username: user.username
-        })
-
-        res.cookie('token', token).json({
-            msg: `inicio de seion correcto. Bienvenido ${user.username}`,
-            id: user.id,
-            username: user.username
-
-        })
-
-
-
-
-        //return res.status(201).json({msg: "inicio de sesion correcta", token, username:user.username})
-
-
+      const { email, password } = req.body;
+      const userFound = await User.findOne({ email });
+  
+      if (!userFound) {
+        return res.status(400).json({ error: "Username or password are incorrect" });
+      }
+  
+      const isPasswordValid = await bcrypt.compare(password, userFound.password);
+  
+      if (!isPasswordValid) {
+        return res.status(400).json({ error: "Username or password are incorrect" });
+      }
+  
+      const token = generateToken({ user: userFound });
+  
+      return res.status(201).json({
+        msg: "Inicio de sesión exitoso",
+        token: token,
+      });
     } catch (error) {
-        console.log(error)
-
+      console.log(error);
+      return res.status(500).json({ error: "Internal server error" });
     }
+  };
 
-}
-
-const Data = async (req, res) => {
-    const { token } = req.body
-
-    try {
-        jwt.verify(token, process.env.SECRET, async (error, decoded) => {
-            if (error) {
-                return res.status(401).json({ error: "Token de autenticación inválido" });
-            }
-
-            const user = User.findById(decoded.id.id)
-            if (!user) {
-                return res.status(404).send({ error: "User not found" });
-            }
-
-            return res
-                .status(200)
-                .send({ id: user._id, name: user.name, email: user.email });
-        })
-
-
-
-    } catch (error) {
-        return res.status(401).send({ error: "Invalid token" });
-
-    }
-
-}
 
 
 
@@ -190,35 +134,19 @@ const UpdateProfile = async (req, res) => {
 
 //Cerrar la sesion
 const LogOut = async (req, res) => {
-    res.cookie("token", "", {
-        httpOnly: true,
-        secure: true,
-        expires: new Date(0),
-    });
-    return res.sendStatus(200);
-}
+    try {
+      res.status(200).json({
+        msg: "Cerró la sesión exitosamente",
+      });
+    } catch (error) {
+      console.log(error);
+      return res.status(500).json({
+        error: "Ocurrió un error al intentar cerrar la sesión",
+      });
+    }
+  };
 
-const VerifyToken = async (req,res) =>{
-    const { token } = req.cookies
 
-    if(!token) return res.status(401).json({msg: "No autorizado"})
-
-    jwt.verify(token, process.env.SECRET, (err, user) =>{
-        if(err) return res.status(401).json({msg:"no autorizado" })
-
-        const userFound = User.findById(user.id)
-
-        if(!userFound) return res.status(401).json({msg: "no autorizado"})
-
-        return res.json({
-            id: userFound.id,
-            username: userFound.username,
-            email: userFound.email,
-
-        })
-    })
-
-}
 
 module.exports = {
     Register,
@@ -226,6 +154,5 @@ module.exports = {
     LogOut,
     viewProfile,
     UpdateProfile,
-    Data,
-    VerifyToken
+    
 }

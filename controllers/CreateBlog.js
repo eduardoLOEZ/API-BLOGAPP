@@ -30,7 +30,6 @@ const CreateBlog = async (req, res) => {
       imgurl,
       cloudinaryId,
       author: req.user.id,
-      username: req.user.username
     });
 
 
@@ -99,7 +98,7 @@ const updateBlog = async (req, res) => {
 const GetAllBlogs = async (req, res) => {
   try {
     const blogs = await Post2.find({});
-    return res.status(200).json({ blogs: blogs });
+    return res.status(200).json(blogs);
 
   } catch (error) {
     res.status(500).json({ message: "Internal server error" });
@@ -116,7 +115,7 @@ const getBlogById = async (req, res) => {
     res.json({ msg: "blog no encontrado" })
   }
 
-  return res.status(200).json({ blog: blog });
+  return res.status(200).json( blog );
 
 }
 

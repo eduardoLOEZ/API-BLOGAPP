@@ -14,8 +14,8 @@ const { auth } = require("../middlewares/auth.middleware")
 
 //Crear blogs con imagenes usando midd de multer 
 blogRouter.post("/createBlog",upload.single("imagen"), auth ,CreateBlog)
-blogRouter.get("/blogs",auth ,GetAllBlogs)
-blogRouter.get("/blog/:id", auth ,getBlogById)
+blogRouter.get("/blogs",GetAllBlogs)
+blogRouter.get("/blog/:id" ,getBlogById)
 blogRouter.delete("/delete/:id", auth ,deleteBlog)
 blogRouter.post("/post/like/:id", auth ,LikePost)
 blogRouter.post("/post/unlike/:id", auth ,UnlikePost)
